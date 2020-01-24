@@ -179,12 +179,21 @@ extension PasswordField: UITextFieldDelegate {
         return true
     }
     
-    private func determineStrength(of text: String) {
-        switch text.count {
-        case ...9: if strength != .weak { setToWeak() }
-        case 10...19: if strength != .medium { setToMedium() }
-        case 20...: if strength != .high { setToHigh() }
-        default: return }
+        private func determineStrength(of text: String) {
+        let bgQueue = DispatchQueue(label: "bg1")
+        bgQueue.async() {
+            let isInDict = UIReferenceLibraryViewController.dictionaryHasDefinition(forTerm: text)
+            var strength: PasswordStrength {
+                switch text.count {
+                case 10...19: return .medium
+                case 20...: return .high
+                default: return .weak
+                }
+            }
+            if strength == .weak || strength == .medium && isInDict { if self.strength != .weak { DispatchQueue.main.async { self.setToWeak() } } else { return } }
+            if strength == .medium || strength == .high && isInDict { if self.strength != .medium { DispatchQueue.main.async { self.setToMedium() } } else { return } }
+            if strength == .high { if self.strength != .high { DispatchQueue.main.async { self.setToHigh() } } }
+        }
     }
 }
 
